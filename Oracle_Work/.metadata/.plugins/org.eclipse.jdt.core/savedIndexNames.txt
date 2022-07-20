@@ -1,0 +1,5 @@
+INDEX VERSION 1.131+C:\Users\yn-17\2022_영남_이승기\Oracle\Oracle_Work\.metadata\.plugins\org.eclipse.jdt.core
+986912785.index
+141661302.index
+230973028.index
+1865797976.index
