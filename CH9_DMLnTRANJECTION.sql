@@ -239,3 +239,103 @@ SQL> SELECT * FROM DEPT_COPY;
  */
 DELETE FROM DEPT_COPY WHERE DNO = 10;
 
+
+
+--<9장 데이터 조작과 트랜잭션-혼자 해보기>-----------------------------
+/*
+ * 1.EMPLOYEE 테이블의 구조만 복사하여 EMP_INSERT란 이름의 빈 테이블을 만드시오.
+ */
+CREATE TABLE EMP_INSERT
+AS SELECT * FROM EMPLOYEE
+WHERE 1 = 2;
+
+/*
+ * 2.본인을 EMP_INSERT 테이블에 추가하되 SYSDATE를 이용하여 입사일을 오늘로 입력하시오.
+ */
+
+SELECT * FROM EMP_INSERT;
+INSERT INTO EMP_INSERT VALUES(9402,'LSK','STUDENT','',SYSDATE,30000,10000,40);
+
+/*
+ * 3.EMP_INSERT 테이블에 옆 사람을 추가하되 TO_DATE 함수를 이용하여 입사일을 어제로 입력하시오.
+ */
+
+INSERT INTO EMP_INSERT VALUES(9206,'LHY','STUDENT','',TO_DATE('2022,07,21','YYYY/MM/DD'),3000,1000,40);
+
+/*
+ * 4.EMPLOYEE 테이블의 구조와 내용을 복사하여 EMP_COPY_2란 이름의 테이블을 만드시오.
+ */
+DROP TABLE EMP_COPY_2;
+
+CREATE TABLE EMP_COPY_2
+AS SELECT * FROM EMPLOYEE;
+
+/*
+ * 5.사원번호가 7788인 사원의 부서번호를 10번으로 수정하시오.
+ */
+
+UPDATE EMP_COPY_2
+SET DNO = 10
+WHERE ENO = 7788;
+
+SELECT * FROM EMP_COPY_2;
+
+/*
+ * 6.사원번호가 7788의 담당 업무 및 급여를 사원번호 7499의 담당 업무 및 급여와 일치하도록 갱신하시오.
+ */
+
+UPDATE EMP_COPY_2
+SET (JOB, SALARY) = (SELECT JOB, SALARY FROM EMP_COPY_2 WHERE ENO = 7499)
+WHERE ENO = 7788;
+
+/*
+ * 7.사원번호 7369와 업무가 동일한 모든 사원의 부서번호를 사원 7369의 현재 부서번호로 갱신하시오.
+ */
+
+UPDATE EMP_COPY_2
+SET DNO = (SELECT DNO FROM EMP_COPY_2 WHERE ENO = 7369)
+WHERE JOB = (SELECT JOB FROM EMP_COPY_2 WHERE ENO = 7369);
+
+/*
+ * 8.DEPARTMENT 테이블의 구조와 내용을 복사하여 DEPT_COPY_2란 이름의 테이블을 만드시오.
+ */
+
+CREATE TABLE DEPT_COPY_2
+AS SELECT * FROM DEPARTMENT;
+
+/*
+ * 9.DEPT_COPY_2 테이블에서 부서명이 RESEARCH인 부서를 제거하시오.
+ */
+
+SELECT * FROM DEPT_COPY_2;
+
+DELETE FROM DEPT_COPY_2
+WHERE DNAME = 'RESEARCH';
+
+/*
+ * 10.DEPT_COPY_2 테이블에서 부서번호가 10이거나 40인 부서를 제거하시오.
+ */
+
+DELETE FROM DEPT_COPY_2
+WHERE DNO IN(10, 40);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
