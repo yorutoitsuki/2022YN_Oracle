@@ -338,9 +338,56 @@ SELECT VIEW_NAME FROM USER_VIEWS;
 
 SELECT TABLE_NAME, CONSTRAINT_NAME, CONSTRAINT_TYPE
 FROM USER_CONSTRAINTS
-WHERE TABLE_NAME IN ('EMPLOYEE', 'DEPARTMENT');
+WHERE TABLE_NAME IN ('EMPLOYEE', 'DEPARTMENT');--주의 대문자로 검색
 
+/*
+ * 6.2 ALL_데이터 사전
+ * 자신의 게정으로 접근할 수 있는 객체와 다른 계정에 접근 가능한 권한을 가진 모든 객체 조회 가능
+ * 
+ * owner : 조회 중인 객체가 누구의 소유인지 확인
+ */
 
+--ALL_TABLES 권한 있는 테이블 목록 확인
+/*
+ * OWNER : 조회 중인 객체가 누구의 소유인지 확인
+ * 사용자 : SYSTEM 일 때 - 결과 500 ROW (SYS와 SYSTEM과 사용자(HR)(교육용) 포함된 상태로 결과가 나옴)
+ * 		: HR	 일 때 - 결과 79  ROW (사용자(HR)과 SYS와 SYSTEM 포함한 다른 사용자들 결과로 나옴)
+ */
+SELECT OWNER, TABLE_NAME
+FROM ALL_TABLES;
+
+SELECT OWNER, TABLE_NAME
+FROM ALL_TABLES
+WHERE OWNER IN('SYSTEM') AND TABLE_NAME IN ('EMPLOYEE', 'DEPARTMENT');
+
+SELECT OWNER, TABLE_NAME
+FROM ALL_TABLES
+WHERE OWNER IN ('HR');
+
+--(2).ALL_CONSTRAINTS : 권한 있는 제약 조건 확인
+
+SELECT * FROM ALL_CONSTRAINTS;
+
+/*
+ * 6.3 DVA_데이터 사전 : 데이터베이스의 모든 객체 조회 가능(DBA_는 시스템 접근 권한)
+ * 시스템 관리와 관련된 VIEW, DBA나 시스템 권한을 가진 사용자만 접근 가능
+ * SYSTEM 계정으로 접속하여 DBA_데이터 사전을 보는데,
+ * 이 때 SYSTEM이 DBA_데이터 사전을 볼 수 있는 권한을 가졌으면 조회가 가능함
+ */
+SELECT * FROM DBA_TABLES
+WHERE OWNER IN ('HR');
+--결과 나옴(이유: HR은 DBA_데이터사전을 조회할 권한이 있어서 접근 가능)
+
+/*
+ * SYSTEM 접속을 끊고 HR 계정으로 접속
+ */
+SELECT * FROM DBA_TABLES
+WHERE OWNER IN ('HR'); 
+--결과 안 나옴(이유: HR은 DBA_데이터사전을 조회할 권한이 없어서 접근 불가능)
+
+/*
+ * -------------------------------------------------
+ */
 CREATE TABLE DEPT(DNO NUMBER(2),
 DNAME VARCHAR2(14),
 LOC VARCHAR2(13));
@@ -356,6 +403,10 @@ MODIFY ENAME VARCHAR(25);
 
 CREATE TABLE EMPLOYEE2(EMP_ID,NAME,SAL,DEPT_ID)
 AS SELECT ENO, ENAME, SALARY, DNO FROM EMPLOYEE;
+
+--4-2
+alter table employee2
+rename column eno to emp_ID;
 
 DROP TABLE EMP;
 
