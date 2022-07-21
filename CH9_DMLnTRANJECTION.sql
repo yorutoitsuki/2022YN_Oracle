@@ -204,12 +204,38 @@ SELECT * FROM EMP_COPY;
  * 트랜잭션으로 인한 하나의 묶은 처리가 시작되기 이전 상태로 되돌림
  * 
  */
+SELECT * FROM DEPT_COPY;
+
+INSERT INTO DEPT_COPY VALUES(10, 'ACCOUNTING', '뉴욕');
+INSERT INTO DEPT_COPY(DNO,LOC, DNAME) VALUES(20, '달라스', 'RESEARCH');
 
 
 
 
+---------------------------------------------------------------------
+/*
+ * TEST IN 'RUN SQL CMD'
+ */
+SQL> DELETE FROM DEPT_COPY;
 
+4 rows deleted.
 
+SQL> SELECT * FROM DEPT_COPY;
 
+no rows selected
 
+SQL> ROLLBACK;
+
+Rollback complete.
+
+SQL> SELECT * FROM DEPT_COPY;
+----------------------------------------------------------------------
+/*
+ * 정리 : INSERT, UPDATE, DELETE 후 COMMIT 하기 전 ROLLBACK 하면 모두 취소됨
+ * SAVEPOINT : ROLLBACK을 위한 CHECKPOINT
+ * 
+ * RUN SQL~실행하기
+ * (예) 10번 부서만 삭제 후
+ */
+DELETE FROM DEPT_COPY WHERE DNO = 10;
 
