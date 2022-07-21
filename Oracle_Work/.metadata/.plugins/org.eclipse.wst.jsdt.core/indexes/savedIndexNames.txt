@@ -1,7 +1,0 @@
-INDEX VERSION 1.4+C:\Users\yn-17\2022_¿µ³²_ÀÌ½Â±â\Oracle\Oracle_Work\.metadata\.plugins\org.eclipse.wst.jsdt.core\indexes
-514903270.index
-73700530.index
-3178338401.index
-3283840724.index
-2922641507.index
-230973028.index
