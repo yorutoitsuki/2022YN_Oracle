@@ -65,8 +65,14 @@ MODIFY GENDER CHAR(1) DEFAULT 'M';
 --6. id에 '기본키 제약조건' 추가
 
 ALTER TABLE TEST
-MODIFY ID PRIMARY KEY;
+ADD PRIMARY KEY(ID);
 
+SELECT CONSTRAINT_NAME, CONSTRAINT_TYPE
+FROM USER_CONSTRAINTS
+WHERE TABLE_NAME IN('TEST');
+
+ALTER TABLE TEST
+DROP CONSTRAINT SYS_C007090;
 --7. 테이블 구조 확인
 
 DESC TEST;
@@ -81,14 +87,46 @@ WHERE TABLE_NAME IN('TEST');
 
 --<DML:데이터 조작어(insert, update, delete) -> TCL:트랜잭션 처리어(commit, rollback, savepoint)
 --9. insert : 데이터 입력
+id     password   name   gender    age    address
+---------------------------------------------------
+yang1  !1111      양영석     M       27     구미시
+yoon2  $2222      윤호섭     M       19     대구광역시
+lee3   #3333      이수광     M       30     서울특별시
+an4    &4444      안여진     F       24     부산광역시
+
+INSERT INTO TEST VALUES('YANG1', '!1111', '양영석', 'M', 27, '구미시');
+INSERT INTO TEST VALUES('YOON2', '$2222', '윤호섭', 'M', 19, '대구광역시');
+INSERT INTO TEST VALUES('LEE3', '#333', '이수광', 'M', 30, '서울특별시');
+INSERT INTO TEST VALUES('AN4', '&4444', '안여진', 'F', 24, '부산광역시');
 
 --10. update : '광역시' -> '시'로 데이터 변경
+
+UPDATE TEST
+SET ADDRESS = REPLACE(ADDRESS,'광역시','시')
+WHERE ADDRESS LIKE '%광역시';
+
+UPDATE TEST
+SET ADDRESS = REPLACE(ADDRESS,'시','광역시')
+WHERE ADDRESS LIKE '%시'
+		AND ADDRESS NOT LIKE '%특별시'
+		AND ADDRESS NOT LIKE '구미%';
+
+SELECT * FROM TEST;
 
 --10번 변경문제. update : '광역시' -> '시'로 데이터 변경
 --(단, 서브쿼리 사용하여 해결하기)
 
+UPDATE TEST
+SET ADDRESS = REPLACE(ADDRESS,'광역시','시')
+WHERE ADDRESS (SELECT ADDRESS
+				FROM TEST
+				WHERE ADDRESS = '%광역시');
+
 --11. delete : 나이가 20미만인 데이터 삭제
 --미만 <20, 이하 <=20, 초과 >20, 이상>=20
+
+DELETE FROM TEST
+WHERE AGE < 20;
 
 --12. 데이터 입력한 후 영구저장(트랜잭션 완료) : RUN SQL~에서 실행
 ----->결과 확인 : 이클립스에서 결과 확인
@@ -100,8 +138,13 @@ WHERE TABLE_NAME IN('TEST');
 --데이터 사전(8장-6. 데이터 사전 참조)
 --14. 사용자가 소유한 테이블 이름 조회
 
+SELECT TABLE_NAME
+FROM USER_TABLES;
+
 --15. 테이블 구조 확인
 ----SQL PLUS명령어는 이클립스에서 실행안됨(RUN SQL~에서 실행)
+
+DESC TEST;
 
 --16. index 생성(index 명 : name_idx)
 --인덱스:검색 속도를 향상시키기 위해 사용
@@ -109,11 +152,33 @@ WHERE TABLE_NAME IN('TEST');
 --     데이터 무결성을 확인하기 위해서 수시로 데이터를 검색하는 용도로 사용되는 
 --     '기본키나 유일키는 인덱스 자동 생성'
 
+CREATE INDEX NAME_IDX
+ON TEST(NAME);
+
+SELECT INDEX_NAME, COLUMN_NAME
+FROM USER_INDEXES
+WHERE TABLE_NAME = 'TEST';
+
+--인덱스 생성 확인 하는 2번째 방법
+SELECT INDEX_NAME, COLUMN_NAME
+FROM USER_IND_COLUMNS
+WHERE TABLE_NAME = 'TEST';
+
 
 --17. view 생성(뷰 이름 : viewTest)
 --뷰? 하나 이상의 테이블이나 다른 뷰를 이용하여 생성되는 가상테이블
 --뷰는 복잡한 쿼리를 단순화 시킬수 있다.
 --뷰는 사용자에게 필요한 정보만 접근하도록 접근을 제한할 수 있다.
+
+CREATE VIEW VIEWTEST
+AS SELECT ID, NAME, GENDER
+FROM TEST;
+
+SELECT * FROM VIEWTEST;
+
+SELECT VIEW_NAME
+FROM USER_VIEWS
+WHERE VIEW_NAME = 'VIEWTEST';
 
 --------------------------------------------------------------------------------------------
 --18. test2 테이블 생성
