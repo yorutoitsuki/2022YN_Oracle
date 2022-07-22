@@ -42,11 +42,17 @@ MANAGER number(4), --해당 사원의 상사번호
 HIREDATE date, --입사일
 SALARY number(7,2), --급여 (실수 : 소수점을 제외한 전체 자리수, 소수점 이하 3째 자리에서 반올림하여 2째 자리까지 표현)
 COMMISION number(7,2), --커미션
-DNO number(2) references department-- 부서번호
---primary key(ENO,ENAME);
+DNO number(2) REFERENCES DEPARTMENT(DNO) ON DELETE SET NULL -- 부서번호
 );
 
-DROP TABLE EMPLOYEE
+
+ALTER TABLE EMPLOYEE
+DROP CONSTRAINT SYS_C007073;
+
+ALTER TABLE EMPLOYEE
+ADD CONSTRAINT FOREIGN KEY(DNO) REFERENCES DEPARTMENT(DNO) ON DELETE SET NULL;
+
+DROP TABLE EMPLOYEE;
 
 --만약, 기곤키가 2개 이상이면
 
