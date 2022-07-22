@@ -16,7 +16,7 @@
  * 
  */
 drop table department;
-drop table employ;
+drop table employEE;
 
 create table department(
 DNO number(2) not null primary key, --부서번호
@@ -34,7 +34,7 @@ select * from DEPARTMENT;
 
 
 --------------------부서 정보 ------------------
-create table employ(
+create table employEE(
 ENO number(4) not null primary key, --사원번호
 ENAME varchar2(10), -- 사원명
 JOB varchar2(9), --업무명
@@ -46,37 +46,39 @@ DNO number(2) references department-- 부서번호
 --primary key(ENO,ENAME);
 );
 
+DROP TABLE EMPLOYEE
+
 --만약, 기곤키가 2개 이상이면
 
-insert into EMPLOY values(7369,'SMITH','CLERK',7902,TO_DATE('17-12-1980','DD-MM-YYYY'),800,'',20); --''=NULL
-INSERT INTO EMPLOY VALUES
+insert into EMPLOYEE values(7369,'SMITH','CLERK',7902,TO_DATE('17-12-1980','DD-MM-YYYY'),800,'',20); --''=NULL
+INSERT INTO EMPLOYEE VALUES
 (7499,'ALLEN','SALESMAN', 7698,to_date('20-2-1981', 'dd-mm-yyyy'),1600,300,30);
-INSERT INTO EMPLOY VALUES
+INSERT INTO EMPLOYEE VALUES
 (7521,'WARD','SALESMAN', 7698,to_date('22-2-1981', 'dd-mm-yyyy'),1250,500,30);
-INSERT INTO EMPLOY VALUES
+INSERT INTO EMPLOYEE VALUES
 (7566,'JONES','MANAGER', 7839,to_date('2-4-1981', 'dd-mm-yyyy'),2975,NULL,20);
-INSERT INTO EMPLOY VALUES
+INSERT INTO EMPLOYEE VALUES
 (7654,'MARTIN','SALESMAN', 7698,to_date('28-9-1981','dd-mm-yyyy'),1250,1400,30);
-INSERT INTO EMPLOY VALUES
+INSERT INTO EMPLOYEE VALUES
 (7698,'BLAKE','MANAGER', 7839,to_date('1-5-1981', 'dd-mm-yyyy'),2850,NULL,30);
-INSERT INTO EMPLOY VALUES
+INSERT INTO EMPLOYEE VALUES
 (7782,'CLARK','MANAGER', 7839,to_date('9-6-1981', 'dd-mm-yyyy'),2450,NULL,10);
-INSERT INTO EMPLOY VALUES
+INSERT INTO EMPLOYEE VALUES
 (7788,'SCOTT','ANALYST', 7566,to_date('13-07-1987', 'dd-mm-yyyy'),3000,NULL,20);
-INSERT INTO EMPLOY VALUES
+INSERT INTO EMPLOYEE VALUES
 (7839,'KING','PRESIDENT', NULL,to_date('17-11-1981','dd-mm-yyyy'),5000,NULL,10);
-INSERT INTO EMPLOY VALUES
+INSERT INTO EMPLOYEE VALUES
 (7844,'TURNER','SALESMAN',7698,to_date('8-9-1981', 'dd-mm-yyyy'),1500,0,30);
-INSERT INTO EMPLOY VALUES
+INSERT INTO EMPLOYEE VALUES
 (7876,'ADAMS','CLERK',   7788,to_date('13-07-1987', 'dd-mm-yyyy'),1100,NULL,20);
-INSERT INTO EMPLOY VALUES
+INSERT INTO EMPLOYEE VALUES
 (7900,'JAMES','CLERK',   7698,to_date('3-12-1981', 'dd-mm-yyyy'),950,NULL,30);
-INSERT INTO EMPLOY VALUES
+INSERT INTO EMPLOYEE VALUES
 (7902,'FORD','ANALYST',  7566,to_date('3-12-1981', 'dd-mm-yyyy'),3000,NULL,20);
-INSERT INTO EMPLOY VALUES
+INSERT INTO EMPLOYEE VALUES
 (7934,'MILLER','CLERK',  7782,to_date('23-1-1982', 'dd-mm-yyyy'),1300,NULL,10);
 
-select * from EMPLOY;
+select * from EMPLOYEE;
 
 
 --급여정보----------
