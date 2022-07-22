@@ -24,8 +24,86 @@
 	
 	CHECK - 사용자가 직접 정의하는 제약 조건
 	- 발생 가능한 상황에 따라 여러 가지 조건을 설정 가능
+	(예) CHECK(0 < SALARY && SALARY < 1000000000)
+	-----------------------------------------------------------------------------------------------------
+	DEFAULT 정의 : 아무런 값을 입력하지 않았을 때 DEFAULT 값이 입력됨
+	
+	제약조건 : 컬럼레벨 - 하나의 컬럼에 대해 모든 제약 조건을 정의
+			테이블 레벨 - 'NOT NULL 제외'한 나머지 제약조건을 정의
  */
 
+------------------1--------------------------------------------------------------------
+
+DROP TABLE CUSTOMER;
+
+CREATE TABLE CUSTOMER(
+	ID VARCHAR2(20) UNIQUE,
+	PWD VARCHAR2(20) NOT NULL,
+	NAME VARCHAR2(20) NOT NULL,
+	PHONE VARCHAR2(30),
+	ADDRESS VARCHAR2(100)
+);
+
+SELECT TABLE_NAME, CONSTRAINT_NAME, CONSTRAINT_TYPE
+FROM USER_CONSTRAINTS
+WHERE TABLE_NAME IN ('CUSTOMER');
+
+------------------2--------------------------------------------------------------------
+
+DROP TABLE CUSTOMER;
+
+/*
+ * 제약조건이름 직접 지정할 때 형식
+ * CONSTRAINT 제약조건이름
+ * CONSTRAINT 테이블명_컬럼
+ */
+CREATE TABLE CUSTOMER(
+	ID VARCHAR2(20) CONSTRAINT CUSTOMER_ID_UNIQUE UNIQUE,
+	PWD VARCHAR2(20) CONSTRAINT CUSTOMER_PWD_NN NOT NULL,
+	NAME VARCHAR2(20) CONSTRAINT CUSTOMER_NAME_NN NOT NULL,
+	PHONE VARCHAR2(30),
+	ADDRESS VARCHAR2(100)
+);
+
+------------------3--------------------------------------------------------------------
+
+SELECT TABLE_NAME, CONSTRAINT_NAME, CONSTRAINT_TYPE
+FROM USER_CONSTRAINTS
+WHERE TABLE_NAME IN ('CUSTOMER');
+
+DROP TABLE CUSTOMER;
+
+CREATE TABLE CUSTOMER(
+	ID VARCHAR2(20) CONSTRAINT CUSTOMER_ID_PK PRIMARY KEY,
+	PWD VARCHAR2(20) CONSTRAINT CUSTOMER_PWD_NN NOT NULL,
+	NAME VARCHAR2(20) CONSTRAINT CUSTOMER_NAME_NN NOT NULL,
+	PHONE VARCHAR2(30),
+	ADDRESS VARCHAR2(100)
+);
+
+--(4)--PK를 테이블 레벨--------------------------------------
+
+SELECT TABLE_NAME, CONSTRAINT_NAME, CONSTRAINT_TYPE
+FROM USER_CONSTRAINTS
+WHERE TABLE_NAME IN ('CUSTOMER');
+
+DROP TABLE CUSTOMER;
+
+CREATE TABLE CUSTOMER(
+	ID VARCHAR2(20),
+	PWD VARCHAR2(20) CONSTRAINT CUSTOMER_PWD_NN NOT NULL,
+	NAME VARCHAR2(20) CONSTRAINT CUSTOMER_NAME_NN NOT NULL,
+	PHONE VARCHAR2(30),
+	ADDRESS VARCHAR2(100),
+	
+	--테이블 레벨
+	CONSTRAINT CUSTOMER_ID_PK PRIMARY KEY(ID)
+	--CONSTRAINT CUSTOMER_ID_PK PRIMARY KE(ID, NAME) --기본키가 2개이상일 때 테이블 레벨 사용
+);
+
+/*
+ * 1.1 NOT NULL 제약조건
+ */
 
 
 
