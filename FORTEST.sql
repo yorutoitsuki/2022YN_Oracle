@@ -190,7 +190,36 @@ id        varchar2(20)   no     PK
 major     varchar2(20)   yes  
 -------------------------------------
 
+create table test2
+(id varchar2(20) not null primary key,
+major varchar2(20));
+
+DELETE FROM TEST2;
+
+insert into test2 values('YANG1', '컴퓨터 공학');
+insert into test2 values('LEE3', '건축 공학');
+insert into test2 values('AN4', '환경 공학');
+insert into test2 values('JUN5', '화학 공학');
+
 --test, test2 EQUI 조인(=등등조인=동일조인) : 데이터 타입이 같아야 함
+/*
+ * 컬럼명이 달라도 조인 가능
+ */
+
+select *
+from test, test2
+where test.id = test2.id;
+
+select *
+from test join test2
+on test.id = test2.id;
+
+select *
+from test natural join tset2;
+
+select *
+from test join test2
+using (id);
 
 /*
  * ▶ NATURAL 조인과 USING 절을 이용한 조인의 차이점
@@ -216,36 +245,267 @@ major     varchar2(20)   yes
 
 --19. 서브쿼리를 이용하여 major가 '컴퓨터 공학'인 사람의 이름 조회
 
+select * from test;
+select * from test2;
+
+select name
+from test
+where UPPER(ID) IN (select id from test2
+			where major = '컴퓨터 공학');
+
 --20. 집합연산자 : 각 쿼리의 '컬럼 개수'와 '데이터 타입'이 일치
 --20.1 UNION : 각 쿼리의 결과의 합을 반환하는 '합집합'(중복제거)
 --             쿼리의 결과를 합친 후 '중복을 제거'하는 작업이 추가로 적용되므로 쿼리의 속도 및 부하가 발생한다.
 --             중복을 제거할 필요가 없으면 UNION ALL을 사용하는 것이 합리적이다.
 
+/*
+ * EMPLOYEE 테이블 대상
+ * 1. 사원 테이블에서 급여가 3000이상인 사원의 직업과 부서번호 조회
+ */
+			
+SELECT JOB, DNO
+FROM EMPLOYEE
+WHERE SALARY >= 3000;
 
+--2 사원테이블에서 부서번호가 10인 사원의 직업과 부서번호 조회
+
+SELECT JOB, DNO
+FROM EMPLOYEE
+WHERE DNO = 10;
+
+SELECT JOB, DNO
+FROM EMPLOYEE
+WHERE SALARY >= 3000
+
+UNION
+
+SELECT JOB, DNO
+FROM EMPLOYEE
+WHERE DNO = 10;
+			
 --20.2 INTERSECT : 각 쿼리의 결과 중 '같은 결과만 반환'하는 '교집합'
 
+SELECT JOB, DNO
+FROM EMPLOYEE
+WHERE SALARY >= 3000
+
+INTERSECT
+
+SELECT JOB, DNO
+FROM EMPLOYEE
+WHERE DNO = 10;
 
 --20.3 MINUS : 앞 쿼리의 결과 - 뒤 쿼리의 결과  ('차집합')(중복제거)
 --             앞 쿼리의 결과 - 앞뒤 교집합의 결과
+
+SELECT JOB, DNO
+FROM EMPLOYEE
+WHERE SALARY >= 3000
+
+MINUS
+
+SELECT JOB, DNO
+FROM EMPLOYEE
+WHERE DNO = 10;
 
 ----------------------------------------------------------------------------------------------------
 
 --UNION : 특징들을 예로 설명
 --(예1) job별로 급여의 총합과 커미션의 총합 구하기
 
+SELECT JOB, SUM(SALARY) AS SUM, SUM(NVL(COMMISSION,0)) AS CO_SUM
+FROM EMPLOYEE
+GROUP BY JOB
+ORDER BY JOB ASC;
+--컬럼명 으로 정렬 가능하나
 
+
+--UNION을 사용한 방법에서는 컬럼명 정렬 불가능
 --(예1 변경-2) 모든 별칭 생략하면 '1번째 컬럼 자체'가 '컬럼명'으로 표시됨
 
+SELECT 'SALARY' AS KIND, JOB, SUM(SALARY) AS SUM
+FROM EMPLOYEE 
+GROUP BY JOB
+
+UNION
+
+SELECT 'COMMISSION' AS KIND, E2.JOB, SUM(NVL(COMMISSION,0)) AS CO_SUM
+FROM EMPLOYEE E2
+GROUP BY E2.JOB;
+
+ALTER TABLE EMPLOYEE
+RENAME COLUMN COMMISION TO COMMISSION;
+
+SELECT 'SALARY' AS KIND1, JOB AS JOB1, SUM(SALARY) AS SUM
+FROM EMPLOYEE 
+GROUP BY JOB
+
+UNION
+
+SELECT 'COMMISSION' AS KIND2, E2.JOB AS JOB2, SUM(NVL(COMMISSION,0)) AS CO_SUM
+FROM EMPLOYEE E2
+GROUP BY E2.JOB
+
+ORDER BY KIND1 DESC, JOB1 ASC;
+/*
+ * ORDER BY는 쿼리문의 마지막 단 1번만 사용가능
+ * ORDER BY절 + '윗 테이블의 별칭' 또는 '컬럼 순번'만 사용가능
+ */
 --(예2) 사원 테이블과 부서 테이블을 결합하여 부서번호와 부서이름을 조회(중복 제거)
+
+SELECT DISTINCT DNO, DNAME
+FROM EMPLOYEE JOIN DEPARTMENT
+USING (DNO);
+
 
 --[문제] 사원 테이블과 부서 테이블에 '동시에 없는 부서번호, 부서이름' 조회
 --(employee의 dno가 department의 dno를 references를 아는 전제 하에서
 --즉,'employee의 dno가 참조하는 dno는 반드시 department의 dno로 존재한다'는 사실을 아는 전제 하에서 문제 해결함) 
 
+SELECT DNO, DNAME
+FROM DEPARTMENT
+WHERE DNO NOT IN (SELECT DISTINCT DNO
+				  FROM EMPLOYEE);
+
+SELECT DNO
+FROM DEPARTMENT
+
+INTERSECT
+
+SELECT DNO
+FROM EMPLOYEE
+
+SELECT DNO, DNAME
+FROM DEPARTMENT
+WHERE DNO NOT IN (
+				SELECT DNO
+				FROM DEPARTMENT
+
+				INTERSECT
+
+				SELECT DNO
+				FROM EMPLOYEE)
 ---------------------------------------------------------------------------------------------------                                         
 
 -- UNION 사용 : 서로 다른 테이블을 사용한 쿼리의 결과가 합쳐서 조회
 --            select문의 컬럼의 개수와 각 컬럼의 데이터 타입만 일치하면 된다.   
+/*
+ * 합계를 따로 연산하여 조회결과에 합치는 용도로 UNION ALL 사용
+ * 1. 각 직업 별 합을 조회
+ */
+				
+SELECT JOB, SUM(SALARY)
+FROM EMPLOYEE
+GROUP BY JOB;
+
+--2. 전체 사원의 총합 조회
+SELECT SUM(SALARY)
+FROM EMPLOYEE;
+
+--1+2
+SELECT JOB, SUM(SALARY) AS "급여"
+FROM EMPLOYEE
+GROUP BY JOB
+
+UNION ALL
+
+SELECT '합계',SUM(SALARY)
+FROM EMPLOYEE;
+
+/*
+ * '합계' JOB이 CHAR 타입, '합계' 또한 CHAR 타입, 고로 JOB 대신 들어갔음
+ */
+
+/*
+ * 사원 테이블에서 '연봉 상위 3명'의 이름, 급여조회(단, 급여가 같으면 사원 이름으로 오름차순 정렬)
+ * 단 UNION ALL 이용
+ */
+
+SELECT ENAME, SALARY, "RNK"
+FROM (SELECT ENAME, SALARY, DENSE_RANK() OVER(ORDER BY SALARY DESC) AS "RNK"
+	  FROM EMPLOYEE)
+WHERE "RNK" <=3
+ORDER BY "RNK", ENAME;
+
+SELECT ENAME, SALARY, "RNK"
+FROM (SELECT ENAME, SALARY, RANK() OVER(ORDER BY SALARY DESC) AS "RNK"
+	  FROM EMPLOYEE)
+WHERE "RNK" <=3
+ORDER BY "RNK", ENAME;
+
+SELECT ENAME, SALARY
+FROM (SELECT ENAME, SALARY
+	  FROM EMPLOYEE
+	  ORDER BY SALARY DESC)
+WHERE ROWNUM <= 3;
+
+SELECT ROWNUM, ENAME, SALARY
+FROM (SELECT ENAME, SALARY FROM EMPLOYEE WHERE DNO = 10
+	  UNION ALL
+	  SELECT ENAME, SALARY FROM EMPLOYEE WHERE DNO = 20
+	  UNION ALL
+	  SELECT ENAME, SALARY FROM EMPLOYEE WHERE DNO = 30
+	  UNION ALL
+	  SELECT ENAME, SALARY FROM EMPLOYEE WHERE DNO = 40
+	  ORDER BY SALARY DESC)
+WHERE ROWNUM <=3;
+
+SELECT ROWNUM, E.*
+FROM (SELECT ENAME, SALARY FROM EMPLOYEE WHERE DNO = 10
+	  UNION ALL
+	  SELECT ENAME, SALARY FROM EMPLOYEE WHERE DNO = 20
+	  UNION ALL
+	  SELECT ENAME, SALARY FROM EMPLOYEE WHERE DNO = 30
+	  UNION ALL
+	  SELECT ENAME, SALARY FROM EMPLOYEE WHERE DNO = 40
+	  ORDER BY SALARY DESC) E --반드시 테이블 별칭 사용
+WHERE ROWNUM <=3;
+
+
+----------------------------------------------------------------------------------------------------
+/*
+ * 3 UNION ALL 이용하지 말것, ROWNUM 또는 RANK()만 사용
+ * 1.RANK()만 사용
+ */
+
+SELECT *
+FROM (SELECT ENAME, SALARY, RANK() OVER(ORDER BY SALARY DESC) AS "RNK"
+	  FROM EMPLOYEE)
+WHERE "RNK" <=3
+ORDER BY "RNK", ENAME; 
+
+SELECT ROWNUM, E.*
+FROM (SELECT ENAME, SALARY, RANK() OVER(ORDER BY SALARY DESC) AS "RNK"
+	  FROM EMPLOYEE) E
+WHERE ROWNUM <=3
+ORDER BY "RNK", ENAME; 
+
+/*
+ * 2.ROW_NUMBER()를 이용하여 ROWNUM 직접 만들기 
+ * (=>즉, INSERTE된 순서가 아니라 내가 정한 순서로 ROWNUM을 설정하겠다)
+ * 1.
+ */
+
+SELECT *
+FROM EMPLOYEE
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
