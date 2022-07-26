@@ -318,7 +318,7 @@ and dno != '7788';
 --2.사원번호가 7499인 사원보다 급여가 많은 사원을 표시(사원이름과 담당업무)
 select ename, job, salary
 from EMPLOYEE
-where salary > (select salary from EMPLOYEE where eno = '7788');
+where salary > (select salary from EMPLOYEE where eno = '7499');
 
 --3.최소급여를 받는 사원의 이름, 담당 업무 및 급여 표시(그룹함수 사용)
 select ename, job, salary
