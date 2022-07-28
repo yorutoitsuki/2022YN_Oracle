@@ -326,32 +326,48 @@ from EMPLOYEE
 where salary = (select min(salary) from EMPLOYEE);
 --4.'직급별' 평균 급여가 가장 적은 담당 업무를 찾아 '직급(job)'과 '평균 급여' 표시
 --단, 평균의 최소급여는 반올림하여 소수1째자리까지 표시
-select job, round(avg(salary),1)
+select job, round(avg(salary),1) as "평균 급여"
 from EMPLOYEE
 group by job
-having avg(salary) = (select min(round(avg(salary),1)) from EMPLOYEE group by job)
+having avg(salary) = (select min(avg(salary)) from EMPLOYEE group by job);
+
+--단, 작업별 평균 급여가 다를 때만 가능
+
+select job, avg(salary)  as "평균 급여"
+from EMPLOYEE 
+group by job
+order by "평균 급여"
+
+select *
+from(select job, avg(salary)  as "평균 급여"
+	from EMPLOYEE 
+	group by job
+	order by "평균 급여")
+where ROWNUM = 1;
+
 --5.각 부서의 최소 급여를 받는 사원의 이름, 급여, 부서 번호 표시
 select ename, salary, dno
 from EMPLOYEE
-where salary in (select min(salary) from EMPLOYEE group by dno)
+where (DNO, salary) in (select DNO, min(salary) from EMPLOYEE group by dno);
+
 --6.'담당 업무가 분석가(ANALYST)인 사원보다 급여가 적으면서 업무가 분석가가 아닌' 
 --사원들을 표시(사원번호, 이름, 담당 업구, 급여)
 select eno, ename, job, salary
 from EMPLOYEE
 where job != 'ALALYST'
-and salary < all(select salary from EMPLOYEE where job = 'ANALYST');
+and salary < ALL(select salary from EMPLOYEE where job = 'ANALYST');
 
 --★★7.부하직원이 없는 사원이름 표시(먼저 '문제 8. 부하직원이 있는 사원이름 표시'부터 풀기)
 
 select ename
 from EMPLOYEE
-where eno not in (select manager from EMPLOYEE where manager is not null);
+where eno not in (select DISTINCT manager from EMPLOYEE where manager is not null);
 
 --★★8.부하직원이 있는 사원이름 표시
 
 select ename
 from EMPLOYEE
-where eno in (select manager from EMPLOYEE where manager is not null);
+where eno in (select DISTINCT manager from EMPLOYEE where manager is not null);
 
 --9.BLAKE와 동일한 부서에 속한 사원이름과 입사일을 표시(단,BLAKE는 제외)
 
