@@ -363,6 +363,13 @@ select ename
 from EMPLOYEE
 where eno not in (select DISTINCT manager from EMPLOYEE where manager is not null);
 
+select ename
+from EMPLOYEE
+where eno != all (select DISTINCT manager from EMPLOYEE where manager is not null);
+/*
+ * any 조건 : 만족하는 값 하나만 있으면 참
+ */
+
 --★★8.부하직원이 있는 사원이름 표시
 
 select ename
