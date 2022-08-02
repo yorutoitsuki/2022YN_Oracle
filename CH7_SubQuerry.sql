@@ -366,6 +366,20 @@ where eno not in (select DISTINCT manager from EMPLOYEE where manager is not nul
 select ename
 from EMPLOYEE
 where eno != all (select DISTINCT manager from EMPLOYEE where manager is not null);
+
+
+select ename
+from employee
+where ename not in(select distinct e2.ename
+				   from employee e1, employee e2
+				   where e1.manager = e2.eno);
+				   
+select ename
+from employee
+minus
+select distinct e2.ename
+from employee e1, employee e2
+where e1.manager = e2.eno;
 /*
  * any 조건 : 만족하는 값 하나만 있으면 참
  */
@@ -375,6 +389,10 @@ where eno != all (select DISTINCT manager from EMPLOYEE where manager is not nul
 select ename
 from EMPLOYEE
 where eno in (select DISTINCT manager from EMPLOYEE where manager is not null);
+
+select distinct e2.ename
+from employee e1, employee e2
+where e1.manager = e2.eno;
 
 --9.BLAKE와 동일한 부서에 속한 사원이름과 입사일을 표시(단,BLAKE는 제외)
 
@@ -388,7 +406,8 @@ and ename != 'BLAKE';
 
 select eno, ename
 from EMPLOYEE
-where salary > (select avg(salary) from EMPLOYEE);
+where salary > (select avg(salary) from EMPLOYEE)
+order by salary;
 
 --11.이름에 K가 포함된 사원과 같은 부서에서 일하는 사원의 사원번호와 이름 표시
 
