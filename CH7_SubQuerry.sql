@@ -419,7 +419,7 @@ where dno in (select dno from EMPLOYEE where ename like '%K%');
 
 select ename, dno, job
 from EMPLOYEE
-where dno = (select dno from department where loc = 'DALLAS');
+where dno in (select dno from department where loc = 'DALLAS');
 
 --[과제-1]
 --[12번 변경문제]. 부서위치가 DALLAS인 사원이름, 부서번호, 담당 업무, + '부서위치' 표시 
@@ -427,19 +427,25 @@ where dno = (select dno from department where loc = 'DALLAS');
 select ename, dno, job, loc
 from EMPLOYEE join department
 using (dno)
-where dno = (select dno from department where loc = 'DALLAS');
+where dno in (select dno from department where loc = 'DALLAS');
+
+select ename, dno, job, loc
+from EMPLOYEE join department
+using (dno)
+where loc = 'DALLAS';
+
 
 --13.KING에게 보고하는 사원이름과 급여 표시
 
 select ename, salary
 from EMPLOYEE
-where manager = (select eno from EMPLOYEE where ename = 'KING');
+where manager in (select eno from EMPLOYEE where ename = 'KING');
 
 --14.RESEARCH 부서의 사원에 대한 부서번호, 사원이름, 담당 업무 표시
 
 select dno, ename, job
 from EMPLOYEE
-where dno = (select dno from department where dname = 'RESEARCH');
+where dno in (select dno from department where dname = 'RESEARCH');
 
 --15.평균 급여보다 많은 급여를 받고 이름에 M이 포함된 사원과 같은 부서에서 근무하는 
 --사원번호,이름,급여 표시
