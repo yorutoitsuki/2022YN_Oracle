@@ -464,5 +464,8 @@ having avg(salary) = (select min(avg(salary)) from EMPLOYEE group by job);
 --17.담당 업무가 MANAGER인 사원이 소속된 부서와 동일한 부서의 사원이름 표시
 
 select ename
-from EMPLOYEE
-where eno in (select manager from EMPLOYEE)
+from employee
+where dno in (select dno
+			  from employee
+			  where job = 'MANAGER')
+and job != 'MANAGER';
