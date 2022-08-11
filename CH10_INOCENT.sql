@@ -223,9 +223,35 @@ CONSTRAINT EMP_SECOND_DNO_FK FOREIGN KEY(DNO) REFERENCES DEPARTMENT2(DNO) ON DEL
  */
 
 
+drop table department2 cascade constraints;
+/*
+ * 부서 테이블을 참조하고 있는 사원 테이블의 '제약 조건'을 먼저 제거하고 부서테이블이 drop됨
+ * 먼저, 사원테이블의 참조키 제약조건 제거 후 부서테이블 제거됨
+ */
+
+insert into emp_second values(1,'김', '영업', null, 30);
+insert into emp_second values(2,'이', '조사', 2000, 20);
+insert into emp_second values(3,'박', '운영', 3000, 40);
+insert into emp_second values(4,'조', '상담', 3000, 20);
+
+/*
+ * 1.5 check 제약조건 : 값의 범위나 조건 지정
+ * currval, nextval, rownum 사용불가
+ * sysdate 함수 사용불가
+ * 
+ * check(salary > 0)
+ */
+--ORA-02290: check constraint (SYSTEM.SYS_C007077) violated
+insert into emp_second values(5, '강', '상담', -4000, 20);
 
 
+insert into emp_second values(5, '강', '상담', 4000, 20);
 
+/*
+ * 1.6 default 정의
+ * default 값 넣는 2가지 방법
+ */
+insert into emp_second()
 
 
 
