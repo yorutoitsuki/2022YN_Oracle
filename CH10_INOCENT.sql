@@ -251,11 +251,19 @@ insert into emp_second values(5, '강', '상담', 4000, 20);
  * 1.6 default 정의
  * default 값 넣는 2가지 방법
  */
-insert into emp_second()
+insert into emp_second(eno,ename,job,dno) values(6,'권','인사',30);
+insert into emp_second values(6,'권','인사',default,30);--default 대신 1000입력됨
+insert into emp_second values(5,'강','상담', 4000, 20);
 
+select * from emp_second;
+/*
+ * 지금 부터 부모인 부서테이블에서 dno=20 인 row 삭제하면 자식테이블인 사원테이블에서 dno=20인 row도 함께 삭제됨
+ * 이유 : foreign key(dno) references department2(dno) on delete cascade
+ */
+delete from department2 where dno = 20;
 
-
-
+select * from department2;
+select * from emp_second;
 
 
 
