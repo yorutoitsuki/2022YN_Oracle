@@ -265,6 +265,18 @@ delete from department2 where dno = 20;
 select * from department2;
 select * from emp_second;
 
+delete from department where dno = 20;
+/*
+ * 오류, 이유:자식에서 참조하고 있으면 부모의 레코드를 삭제불가(no action(=기본값))
+ */
+
+--테이블 전체(테이블 구조 + 데이터) 제거
+drop table DEPARTMENT2;--실패, 현재 사원테이블의 참조키로 참조하고 있으므로 테이블 전체 제거 안됨
+
+--테이블 데이터만 삭제(테이블 구조는 남기고)
+truncate table department2;--rollback이 불가능함
+delete from department2;--rollback 가능하므로(혹시 잘못 삭제 후 다시 복원가능)
+
 
 
 
