@@ -422,4 +422,91 @@ ALTER TABLE DEPT
 DROP UNUSED COLUMNS;
 
 
+-------------------------------------------------------------------------------------------------------
+/*
+ * 제약 조건 변경하기
+ * 2.1 제약 조건 추가 : alter table 테이블명 + add constraint 제약조건 이름 + 제약조건
+ * 단, 'Not null' 조건은 위의 방법으로 추가하지 못함
+ * 				alter table 테이블명 + modify 로 null 상태로 변경 가능
+ * 'default 정의할때'도 alter table 테이블명 + modify
+ * 
+ */
+
+drop table dept_copy;
+create table dept_copy
+as
+select * from department;
+
+drop table emp_copy;
+create table emp_copy
+as
+select * from employee;
+
+SELECT TABLE_NAME, CONSTRAINT_NAME, CONSTRAINT_TYPE
+FROM USER_CONSTRAINTS
+WHERE TABLE_NAME IN ('EMP_COPY', 'DEPT_COPY');
+
+alter table dept_copy add constraint dnpt_copy_pk primary key(dno);
+
+alter table emp_copy add constraint emp_copy_dno_fk foreign key(dno) references dept_copy(dno);
+
+select * from dept_copy;
+alter table dept_copy modify dno default 50;
+
+ALTER TABLE EMP_COPY MODIFY ENAME CONSTRAINT EMP_COPY_ENAME_NN NOT NULL;
+
+--DEFAULT 정의 추가하기
+ALTER TABLE EMP_COPY MODIFY SALARY CONSTRAINT EMP_COPY_SALARY_D DEFAULT 500;
+--ORA-02253: constraint specification not allowed here
+--CONSTRAINT 제약조건명 입력하면 안됨(이유 : 제약조건이 아니라 정의 이므로)
+
+ALTER TABLE EMP_COPY MODIFY SALARY DEFAULT 500;
+
+SELECT TABLE_NAME, CONSTRAINT_NAME, CONSTRAINT_TYPE
+FROM USER_CONSTRAINTS
+WHERE TABLE_NAME IN ('EMP_COPY', 'DEPT_COPY');
+
+--체크 제약 조건
+ALTER TABLE EMP_COPY
+ADD CONSTRAINT EMP_COPY_CHECK CHECK(SALARY > 1000);
+--ORA-02293: cannot validate (SYSTEM.EMP_COPY_CHECK) - check constraint violated
+--이미 들어간 데이터와 충돌이 일어나서 오류가 발생
+SELECT * FROM EMP_COPY
+ORDER BY SALARY;
+
+ALTER TABLE EMP_COPY
+ADD CONSTRAINT EMP_COPY_SALARY_CHECK CHECK(500 <= SALARY AND SALARY < 10000);
+
+ALTER TABLE DEPT_COPY
+ADD CONSTRAINT DEPT_COPY_DNO_CHECK CHECK(DNO IN(10, 20, 30, 40, 50));
+
+SELECT TABLE_NAME, CONSTRAINT_NAME, CONSTRAINT_TYPE
+FROM USER_CONSTRAINTS
+WHERE TABLE_NAME IN ('EMP_COPY', 'DEPT_COPY');
+
+-------------------------------------------------------------------------------------
+/*
+ * 제약조건 제거
+ * 외래키(참조키) 제약조건 에 지정되어 있는 부모 테이블의 기본키 제약조건을 제거하려면
+ * 자식 테이블의 참조 무결성 제약조건을 먼저 제거 하거나
+ * CASCADE 옵션 사용
+ */
+
+ALTER TABLE EMP_COPY
+DROP CONSTRAINT DNO;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
