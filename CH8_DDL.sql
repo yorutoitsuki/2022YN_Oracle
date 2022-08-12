@@ -493,15 +493,68 @@ WHERE TABLE_NAME IN ('EMP_COPY', 'DEPT_COPY');
  */
 
 ALTER TABLE EMP_COPY
-DROP CONSTRAINT DNO;
+DROP CONSTRAINT EMP_COPY_DNO_FK;
+
+ALTER TABLE DEPT_COPY
+DROP PRIMARY KEY;
+--ORA-02441: Cannot drop nonexistent primary key
+ALTER TABLE DEPT_COPY
+DROP PRIMARY KEY CASCADE;
+
+SELECT TABLE_NAME, CONSTRAINT_NAME, CONSTRAINT_TYPE
+FROM USER_CONSTRAINTS
+WHERE TABLE_NAME IN ('EMP_COPY', 'DEPT_COPY');
+
+--NOT NULL 제약조건 제거
+
+ALTER TABLE EMP_COPY
+DROP CONSTRAINT EMP_COPY_ENAME_NN;
+
+------------------------------------------------------------------------------
+/*
+ * 제약조건 활성화 및 비활성화
+ * ALTER TABLE 테이블명 + DISABLE CONSTRAINT 제약조건명 [CASCADE]
+ */
 
 
 
 
+--<10장 데이터 무결성과 제약조건-혼자 해보기>
+--1.employee테이블의 구조만 복사하여 emp_sample 테이블 생성
+--사원 테이블의 사원번호 컬럼에 테이블 레벨로 primary key 제약조건을 지정하되
+--제약조건명은 my_emp_pk로 지정
+DROP TABLE EMP_SAMPLE;
+
+CREATE TABLE EMP_SAMPLE
+AS SELECT * FROM EMPLOYEE
+WHERE 1=0;
+
+ALTER TABLE EMP_SAMPLE
+ADD CONSTRAINT MY_EMP_PK PRIMARY KEY(ENO);
+
+--2.부서테이블의 부서번호 컬럼에 테이블 레벨로 primary key 제약조건 지정하되
+--제약조건명은 my_dept_pk로 지정
+
+CREATE TABLE DNO_SAMPLE
+AS SELECT * FROM DEPARTMENT;
+
+ALTER TABLE DNO_SAMPLE
+ADD CONSTRAINT MY_DEPT_PK PRIMARY KEY(DNO);
+
+--3.사원테이블의 부서번호 컬럼에 존재하지 않는 부서의 사원이 배정되지 않도록
+--외래키(=참조키) 제약조건(=참조 무결성)을 지정하되
+--제약 조건 이름은 my_emp_dept_fk로 지정
+
+ALTER TABLE EMP_SAMPLE
+ADD CONSTRAINT MY_EMP_DEPT_FK FOREIGN KEY(DNO) REFERENCES DNO_SAMPLE;
 
 
+--4.사원 테이블의 커미션 컬럼에 0보다 큰 값만 입력할 수 있도록 제약조건 지정
 
+DELETE FROM EMP_SAMPLE;
 
+ALTER TABLE EMP_SAMPLE
+MODIFY COMMISSION CHECK(COMMISSION > 0);
 
 
 
