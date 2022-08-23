@@ -97,31 +97,152 @@ WHERE 1= 0;
 --DNO에 기본키 제약조건 추가
 ALTER TABLE DEPT12 ADD PRIMARY KEY(DNO);
 
-CREATE SEQUENCE DON_SEQ
+DROP SEQUENCE DNO_SEQ;
+CREATE SEQUENCE DNO_SEQ
 START WITH 10
 INCREMENT BY 10 NOCYCLE; --NOCYCLE이 기본값 10,20,30,...80,90 (정지)
 
-SELECT * FROM DEPT12
-
-insert into DEPT12 values(DON_SEQ.NEXTVAL,'ACCOUNTING','NEW YORK');
-insert into DEPT12 values(DON_SEQ.NEXTVAL,'RESEARCH','DALLAS');
-insert into DEPT12 values(DON_SEQ.NEXTVAL,'SALES','CHICAGO');
-insert into DEPT12 values(DON_SEQ.NEXTVAL,'OPERATIONS','BOSTON');
-
-
+SELECT * FROM DEPT12;
+DELETE FROM DEPT12;
+insert into DEPT12 values(DNO_SEQ.NEXTVAL,'ACCOUNTING','NEW YORK');
+insert into DEPT12 values(DNO_SEQ.NEXTVAL,'RESEARCH','DALLAS');
+insert into DEPT12 values(DNO_SEQ.NEXTVAL,'SALES','CHICAGO');
+insert into DEPT12 values(DNO_SEQ.NEXTVAL,'OPERATIONS','BOSTON');
 
 
+--2. 시퀀스 수정 및 제거
+/*
+ * 수정시 주의할 사항 2가지
+ * 1. start with 시작숫자는 수정 불가
+ * 이유, 이미 사용중인 시퀀스의 시작값을 변경할 수 엇ㅂ으므로
+ * 시작번호를 다른 번호로 다시 시작하려면 이전 시퀀스를 drop으로 삭제 후 다시 생성
+ * 
+ * 2. 증가(최소값) : 현재 들어있는 값보다 높은 최소값으로 설정할 수 없다
+ * 	  감소(최대값) : 현재 들어있는 값보다 낮은 최대값으로 설정할 수 없다.
+ * 	  (예) 최대값 10000 시작하여 10씩 감소할떄
+ * 			->최대값 5000으로 변경하면 5000보다 큰 이미 추가된 값들이 무결성을 해침
+ */
+
+ALTER SEQUENCE 시퀀스 명 --시퀀스도 DDL(데이터 정의 어)문 이므로 ALTER문으로 수정 가능
+--[START WITH 시퀀스 시작숫자]--시퀀스 수정시 사용 불가함. CREATE SEQUENCE에서만 사용
+[MINVALUE 최솟값| NOMINVALUE(기본값)]	--NOMINVALUE(기본값) : 증가일 때 1, 감소일때 -10의 26승 까지
+									--MINVALUE 최솟값 : 최솟값 설정, 시작숫자과 같거나 작아야함 MAXVALUE보다는 작아야함
+[MAXVALUE 최댓값| NOMAXVALUE(기본값)]	--NOMAXVALUE(기본값) : 증가일 때 10의 27승 까지, 감소일 때 -1 까지
+									--MAXVALUE 최댓값 : 최댓값 설정, 시작숫자와 같거나 커야하고 MINVALUE보다는 커야함
+[CYCLE | NOCYCLE(기본값)] --CYCLE : 최대값 까지 증가 후 최소값으로 다시 시작
+						--NOCYCLE : 최대값 까지 증가 후 그다음 시퀀스를 발급 받으려면 에러 발생
+[CACHE N | NOCACHE] --CACHE N : 메모리 상에 시퀀스 값을 미리 할당(기본값은 20)
+					--NO CACHE : 메모리 상에 시퀀스 값을 미리 할당하지 않음
+[ORDER | NOORDER(기본값)]		--ORDER : 병렬서버를 사용할 경우 요청 순서에 따라 정확하게 시퀀스를 생성하기를 원할때
+;
+
+SELECT SEQUENCE_NAME, MIN_VALUE, MAX_VALUE, INCREMENT_BY, CYCLE_FLAG, CACHE_SIZE
+FROM USER_SEQUENCES--     1        10E+27          10			N			20     
+WHERE SEQUENCE_NAME IN ('DNO_SEQ');--대문자
+
+--최대값을 50으로 수정
+
+ALTER SEQUENCE DNO_SEQ
+MAXVALUE 50;
+
+SELECT * FROM DEPT12;
+INSERT INTO DEPT12 VALUES(DNO_SEQ.NEXTVAL, 'COMPUTING','SEOUL');
+INSERT INTO DEPT12 VALUES(DNO_SEQ.NEXTVAL, 'COMPUTING','DAEGU');
+
+--방법 1
+ALTER SEQUENCE DNO_SEQ
+MAXVALUE 60;
+
+INSERT INTO DEPT12 VALUES(DNO_SEQ.NEXTVAL, 'COMPUTING','DAEGU');
+
+--방법 2
+DROP SEQUENCE DNO_SEQ;
+
+INSERT INTO DEPT12 VALUES(70, 'COMPUTING','BUSAN');
+
+CREATE SEQUENCE DNO_SEQ;
+
+INSERT INTO DEPT12 VALUES(DNO_SEQ.NEXTVAL, 'COMPUTING','DAEJAN');
+
+SELECT * FROM DEPT12;
+
+DELETE FROM DEPT12 WHERE LOC = 'DAEJAN';
+
+CREATE SEQUENCE DNO_SEQ
+START WITH 80
+INCREMENT BY 10;
+
+INSERT INTO DEPT12 VALUES(DNO_SEQ.NEXTVAL, 'COMPUTING','DAEJAN');
+
+SELECT * FROM DEPT12;
 
 
+---------------------------------------------------------------------------------------------------------------------
+/*
+ * 3. 인덱스 : DB 테이블에 대한 검색 속도를 향상시켜주는 자료구조
+ * 			특정 컬럼에 인덱스를 생성하면 해당 컬럼의 데이터들을 정렬하여 별도의 메모리 공간에 테이터의 물리적 주소와 함께 저장됨
+ */
 
+					<INDEX>								<TABLE>
+				DATA	LOCATION					LOCATION	DATA
+				김		1							1			김
+				김		3							2			이
+				김		1000						3			김
+													4			박
+				이		2									
+													
+				박		4									
+													
+													1000		김
+/*
+ * 사용자의 필요에 의해서 직접 생성할 수 있지만
+ * 데이터무결성을 확인하기 위해서 수시로 데이터를 검색하는 용도로 사용되는
+ * 기본키나 유니크키 는 인덱스 자동생성 됨
+ * 
+ * USER_INDEXES 나 USER_IND_COLUMNS (컬럼이름까지 검색가능) 데이터 사전에서 INDEX 객체 확인 가능
+ * 
+ * INDEX 생성 : CREATE INDEX 인덱스명 ON 테이블명(컬럼1, 컬럼2, 컬럼3...);
+ * INDEX 삭제 : DROP INDEX 인덱스명;
+ */
 
+/*
+ * INDEX 생성 전략
+ * 생성된 인덱스를 가장 효율적으로 사용하려면 데이터의 분포도는 최대한으로
+ * 그리고 조건절에 호출 빈도는 자주 사용되는 컬럼을 INDEX로 생성하는것이 좋다
+ * INDEX는 특정 컬럼을 기준으로 생성하고 기준이 된 컬럼으로 '정렬된 INDEX 테이블'이 생성됨
+ * 이 기준 컬럼은 최대한 중복이 되지 않는 것이 좋다.
+ * 가장 최선은 PK로 INDEX 생성
+ * 
+ * 1. 조건절에 자주 등장하는 컬럼
+ * 2. 항상 비교연산자(=)로 비교되는 컬럼
+ * 3. 중복되는 데이터가 최소한인 컬럼
+ * 4. ORDER BY절에 자주 사용되는 컬럼
+ * 5. JOIN 조건으로 자주 사용되는 컬럼
+ */
+													
+--두 테이블에 자동으로 생성된 INDEX 살피기									
+SELECT INDEX_NAME, TABLE_NAME
+FROM USER_IND_COLUMNS --COLUMN_NAME 검색 가능
+WHERE TABLE_NAME IN ('EMPLOYEE', 'DEPARTMENT');
 
+SELECT INDEX_NAME, TABLE_NAME
+FROM USER_INDEXES --COLUMN_NAME 검색 불가능
+WHERE TABLE_NAME IN ('EMPLOYEE', 'DEPARTMENT');
 
+--사용자가 직접 INDEX 생성
+CREATE INDEX IDX_EMPLOYEE_ENAME
+ON EMPLOYEE(ENAME);
+--확인
+SELECT INDEX_NAME, TABLE_NAME
+FROM USER_IND_COLUMNS --COLUMN_NAME 검색 가능
+WHERE TABLE_NAME IN ('EMPLOYEE', 'DEPARTMENT');
 
-
-
-
-
+--하나의 테이블에 INDEX가 많으면 DB 성능에 좋지 않은 영향을 미칠 수 있다. -> INDEX 제거
+DROP INDEX IDX_EMPLOYEE_ENAME;
+--확인
+SELECT INDEX_NAME, TABLE_NAME
+FROM USER_IND_COLUMNS --COLUMN_NAME 검색 가능
+WHERE TABLE_NAME IN ('EMPLOYEE', 'DEPARTMENT');
 
 
 
