@@ -276,20 +276,143 @@ WHERE TABLE_NAME IN ('EMPLOYEE', 'DEPARTMENT');
  * 실습용
  */
 
-create table emp12;
+create table emp12
 as select * from employee; --제약 조건은 복사 안됨
 
+--예, 인덱스를 사용해야 하는 경우
+DROP TABLE emp12;
+
+select ename from emp12
+where dno = 10;
+
+/*
+ * 쿼리문의 조건이
+ * 1. 테이블 전체 행의 수 : 10000건
+ * 2. 위 쿼리문이 전체 쿼리문 중에서 95% 사ㅏ용됨
+ * 3. 쿼리문의 결과로 구해지는 행 : 200건 정도라면 dno 컬럼은 인덱스를 사용하는 것이 효율적이다
+ * 							검색 결과가 전체 데이터의 2~4% 정도이므로 인덱스가 있어야 검색을 빨리 할 수 있음
+ */
+
+/*
+ * 인덱스가 생성된 후에 새로운 행이 추가, 수정, 삭제 작업이 잦으면
+ * node의 갱신이 주기적으로 일어나 '단편화' 현상 발생
+ * 단편화, 삭제된 레코드의 인덱스 값 자리가 비게 되는 현상
+ * 검색 성능 저하
+ */
+
+ALTER INDEX INX_EMPLOYEE_ENAME REBUILD;
+--기존의 단편화가 많이 진행된 인덱스를 청소해주는 작업을 해주어야 빠른 효율을 누릴 수 있다.
+
+/*
+ * ---------------------------------------------------------------------------------------------
+ */
+
+/*
+ * 인덱스 종류
+ * 고유/비고유 인덱스
+ * 고유 인덱스 : 기본키(unique + not null)나 유일키(unique)처럼 유일한 값을 갖는 컬럼에 생성된 인덱스
+ * 				unique 있으면 (예) 부서테이블의 부서번호
+ * 				특정 컬럼에 고유한 인덱스가 지정되려면 추가한 데이터에 중복된 값이 있어서는 안됨
+ * 
+ * 비고유 인덱스 : 중복된 데이터를 갖는 컬럼에 생성된 인덱스
+ * 				unique 없으면 (예)부서테이블의 부서명이나 지역명
+ */
+
+CREATE UNIQUE INDEX 인덱스명
+ON 테이블명(컬럼명);
+--중복된 값이 있으면 아니됨
+/*
+ * 실습을 위해 DEPT12테이블 사용 : 제약조건은 복사안되어 있음. 그러나 위에서 이미 PK 제약 조건을 추가함
+ * DNO에 고유 인덱스 지정하기
+ */
+
+CREATE UNIQUE INDEX IDX_DEPT12_DNO
+ON DEPT12(DNO);--실패
+
+/*
+ * 자동 생성된 DNO의 INDEX를 찾아서 제거
+ */
+SELECT INDEX_NAME, TABLE_NAME
+FROM USER_IND_COLUMNS
+WHERE TABLE_NAME IN ('DEPT12');
+
+DROP INDEX SYS_C007134;
+--ORA-02429: cannot drop index used for enforcement of unique/primary key
+--기본키 또는 유니크 키는 무조건 인덱스를 가져야 한다.
+
+--DNO의 기본키 제약조건을 찾아서 제거한 후 -> 다시 DNO의 고유 인덱스 지정하기
+SELECT CONSTRAINT_NAME, CONSTRAINT_TYPE
+FROM USER_CONSTRAINTS
+WHERE TABLE_NAME IN ('DEPT12');
+
+ALTER TABLE DEPT12
+DROP CONSTRAINT SYS_C007134 CASCADE;
+
+CREATE UNIQUE INDEX IDX_DEPT12_DNO
+ON DEPT12(DNO);--성공
 
 
+/*
+ * 특정 칼럼에 고유 인덱스가 지정되려면 추가한 데이터에 중복된 값이 있어서는 안됨
+ */
+CREATE UNIQUE INDEX IDX_DEPT12_LOC
+ON DEPT12(LOC);
+--오류가 생긴다면 중복 데이터 때문
+
+CREATE TABLE DEPT12_2
+AS 
+SELECT * FROM DEPARTMENT;
+
+SELECT * FROM DEPT12_2;
+
+INSERT INTO DEPT12_2 VALUES(10, 'ACCOUNTING', 'SEOUL');
+
+DROP INDEX IDX_DEPT12_LOC;
+DROP INDEX IDX_DEPT12_DNO;
 
 
+CREATE UNIQUE INDEX IDX_DEPT12_DNO
+ON DEPT12_2(DNO);
+--실패 ORA-01452: cannot CREATE UNIQUE INDEX; duplicate keys found 중복 값에 의한 오류
+
+CREATE UNIQUE INDEX IDX_DEPT12_LOC
+ON DEPT12_2(LOC);
+--성공 LOC는 중복된 값이 없으므로
+
+--------------------------------------------------------------------------------------------------
+/*
+ * 4.2 결합 인덱스 : 두 개 이상의 컬럼으로 구성한 인덱스
+ */
+
+CREATE INDEX IDX_DEPT12_2_COMPLEX
+ON DEPT12_2(DNAME, LOC);
 
 
+/*
+ * IDX_DEPT12_2_COMPLEX 인덱스를 이용하여 검색속도를 높이는데 사용되는 (예)
+ * 즉, 언제 IDX_DEPT12_2_COMPLEX 인덱스를 이용하여 검색속도를 높이는가?
+ */
 
+SELECT * FROM DEPT_2
+WHERE DNAME = '', LOC = '';
+--그런데 위 쿼리가 거의 사용되지 않는다면 오히려 성능 저하 발생
 
+SELECT * FROM DEPT12_2
+WHERE DNAME = '';
+/*
+ * DNAME에 INDEX가 없다면
+ * DNAME, LOC를 결합하여 생성한 IDX_DEPT12_2_COMPLEX 인덱스를 사용하여 검색
+ * 따라서 전체 테이블 검색보다 더 효율적임
+ */
 
+--4.3 함수 기반 인덱스 : 수식이나 함수를 적용하여 만든 인덱스
+CREATE INDEX IDX_EMP12_SALARY12
+ON EMP12(SALARY*12);
+--수식 이므로 컬럼명이 없어서 '가상 컬럼' 생성됨
 
-
+SELECT INDEX_NAME, COLUMN_NAME
+FROM USER_IND_COLUMNS
+WHERE TABLE_NAME IN('EMP12');
 
 
 
