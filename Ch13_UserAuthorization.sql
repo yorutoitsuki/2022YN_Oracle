@@ -532,10 +532,126 @@ SQL> conn usertest02/1234
 SQL> select * from hr.employees;
 
 
+-------------------------------------------------------------------
+--2.롤(role) 321p : 다양한 권한을 효과적으로 관리할 수 있도록 관련된 권한까지 묶어 놓은것
+--여러 사용자에게 보다 간편하게 권한을 부여할 수 있도록 함
+--grant connect, resource, dba to system;
+--*DBA 롤 : 시스템 자원을 무제한적으로 사용, 시스템 관리에 필요한 모든 권한
+--*connect 롤 : Oracle 9i까지 - 8가지 권한,
+--Oracle 10g 부터는 'create session'만 가지고 있다.
+--*resource 롤 : 객체(테이블, 뷰 등)를 생성할 수 있도록 하기 위해서 '시스템 권한'을 그룹화 시킨것
+
+---------------------------------------------------------------------
+
+--<사용자가 직접 정의해서 사용하는 롤 생성>
+--롤에 암호 부여가능
+--롤 이름은 사용자나 다른 롤과 중복될 수 없음
+
+--<롤 부여 순서>
+--[1] role 생성 : 반드시 DBA권한을 가진 사용자만 롤 생성
+--[2] role 에 권한부여
+--[3] role 을 사용자 또는 다른 role에게 부여
+
+SQL> conn system/1234;
+SQL> create user usertest03 identified by 1234;
+SQL> grant connect, resource to usertest03;
+
+--[1] role 생성
+SQL> create role role_test01;
+--[2] role 에 권한 부여
+SQL> grant to role_test01;
+--[3] role을 사용자 또는 다른 role에게 ㅜ여
+SQL> grant role_test01 to usertest01;
+SQL> conn usertest01/1234;--접속성공
+
+SQL> conn system/1234;--system으로 복귀
+--[3] with ADMIN option : 다른 사용자나 롤에게 해당 롤을 재부여할 수 있는 옵션('평등'한 관계)
+SQL> grant role_test01 to usertest02 with ADMIN option;
+
+SQL> conn usertest02/1234
+SQL> grant role_test01 to usertest with  ADMIN option;
+
+SQL> conn usertest03/1234
+SQL> revoke role_test01 from usertest02;
+
+SQL> conn usertest02/1234 --접속실패
+--------------------------------------------------------------------------
+--데이터 사전을 통해 '롤에 부여된 권한 정보'를 확인가능
+select * 
+from role_sys_privs --'롤에 부여된 스스템 권한(privilege)정보'
+where role like '%TEST%'
 
 
+SQL> conn usertest01/1234
+SQL> select *
+	 from user_role_privs; --현재 사용자가 접근가능한 롤 권한 정보
+
+SQL> conn system/1234
+SQL> select *
+	 from dba_role_privs
+	 where grantee = 'uesertest03';
+
+--<'객체 권한'을 role에 부여하는 방법>
+--[1] role 생성 : 반드시 DBA 권한이 있는 사용자만 롤 생성
+SQL> conn system/1234
+SQL> create role role_test02;
 
 
+--[2] role에 권한부여 : 객체의 소유자(hr)로 접속하여
+SQL> conn hr/1234
+SQL> grant select,insert,update(salary) on employees to role_test02;
+
+--[3] role을 사용자 또는 다른 role에게 부여 : 반드시 DBA 권한이 있는 사용자만 롤 권한 부여
+SQL> conn system/1234
+SQL> grant role_test02 to usertest01;
+
+SQL> conn usertest01/1234
+SQL> select * from hr.employees; --조회 가능
+SQL> select * from user_role_privs; --현재 사용자가 접근 가능한 롤 권한 정보
+SQL> select * from role_tab_privs --롤에 부여된 테이블 권한 정보
+
+--<role 권한 제거>
+--dba 권한이 있는 사용자만 롤 권한 제거가능
+SQL> conn system/1234;
+SQL> drop role role_test01;
+
+--3. 동의어(Synonym)
+--오라클 '객체(테이블, 뷰, 스퀀스, 프로시저)에 대한 별칭' 을 말하며
+--실질적으로 그 자체가 객체가 아니라 객체에 대한 직접적인 참조이다
+
+SQL> conn system/1234
+drop table sampletbl;
+create table sampletble(
+memno varchar2(50)
+);
+
+insert into sampletble values('test1');
+insert into sampletble values('test2');
+--생성한 테이블을 hr사용자에게 조회권한 부여
+grant select on sampletble to hr;
+
+SQL> conn hr/1234
+SQL> select * from system.sampletble
+
+--<동의어 사용 이유>
+--1. 다른 사용자가 소유한 객체에 접근하기 위해서는 소유자로부터 접근 권한을 부여받아야 하고
+--	 다른 사용자가 소유한 객체에 접근하기 위해서는 '사용자명.객체명'(=>긴 이름)
+--	 동의어를 사용하면 '사용자명.객체명'(=>긴 이름) 대신 '별칭을 부여한 짧은 이름'으로 sql코딩을 단순화 시킬 수 있다.
+
+--2. 또한 객체를 참조하는 사용자의 객체를 감출 수 있어서 이에 대한 보안을 유지할 수 있다.
+--	 동의어를 사용하는 사용자는 참조하는 객체에 대한 소유자, 객체이름을 모르고 동의어 이름만 알아도 사용할 수 있다.
+
+--3. 만약에 실무에서 다른 사용자의 객체를 참조할때, 동의어를 생성해서 사용하면 추후에 참조하는 객체명을 바꾸거나 이동할 경우
+--	 그 객체를 사용하는 SQL문을 모두 고치는것이 아니라 동의어만 다시 정의하면 되기 때문에 매우 편리하다.
+
+--<동의어 종류>
+--1. 전용 동의어 : '객체에 대한 접근권한을 부여받은 사용자'가 생성. 해당 사용자만 사용가능
+SQL> conn hr/1234
+create synonym priv_sampletbl for system.sampletble
+drop synonym priv_sampletbl
+
+SQL> select * from priv_sampletbl;
+--2. 공용 동의어
 
 
 
