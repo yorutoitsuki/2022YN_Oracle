@@ -651,10 +651,50 @@ create synonym priv_sampletbl for system.sampletble
 drop synonym priv_sampletbl
 
 SQL> select * from priv_sampletbl;
---2. 공용 동의어
 
 
 
+--2. 공용 동의어 : DBA 권한을 가진 사용자만 생성. 누구나 사용가능
+SQL> conn system/1234
+create public synonym pub_sampletbl for system.sampletble;
+
+grant select on sampletbl to usertest01;
+
+SQL> conn usertest01/1234
+select * from pub_sampletbl;
+
+SQL> conn hr/1234
+select * from pub_sampletbl;
+
+
+--3. 동의어 제거 : 반드시 동의어를 정의한 사용자로 접속
+SQL> conn hr/1234
+drop synonym priv_sampletbl;
+select * from priv_sampletbl;
+select * from system.sampletble;
+
+/*
+ * [ORA-28002: the password will expire within 7 days 오류 해결법]
+1. 해당 내용은 dba계정의 패스워드의 기간이 정해져있을 경우에 나온다. 그래서 7일남았다고 알려주는 경고창이다.
+패스워드 기간을 변경하는 방법이다.
+
+conn sys/oracle as sysdba (또는 conn system/1234 )
+select resource_name,resource_type,limit from dba_profiles;
+로 검색하면 limit 의 값이 정해져 있을것이다.(보통 180)
+
+해당 값을 unlimited로 변경하자.
+alter profile default limit PASSWORD_LIFE_TIME unlimited;
+해당 값으로 변경 후에 다시 조회하면 unlimited로 변경되어 있을것이다.
+
+이제 기본 값은 unlimited이다. 
+하지만 사용하고 있는 계정은 이미 기존의 180으로 적용되었기 때문에 다시 한번 바꿔줘야된다.
+select * from dba_users where username = 'USERTEST01';
+조회시에 expiry_date 값이 남은 기간이다.
+
+PASSWORD_LIFE_TIME 을 변경하였다면, 비밀번호를 변경하면 해당 값이 null로 들어갈 것이다.
+alter user usertest01 identified by 1234;
+비밀번호를 변경하기 싫다면, 기존 비밀번호를 그대로 써서 변경해주면 된다.
+ */
 
 
 
