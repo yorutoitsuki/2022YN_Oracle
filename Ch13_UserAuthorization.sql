@@ -294,9 +294,255 @@ quota unlimited ON users;
 SELECT username, tablespace_name, MAX_BYTES -- USER01   USERS   -1(UNLIMITED : 무제한)
 from dba_ts_quotaS
 WHERE username IN ('USER01');
+
+create table sampletbl(no number); --테이블 생성 실패
+--default tablespace는 'system' 이지만 영역을 할당받지 못했음
+---------------------------------------------------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------------------------------------------------
+--1. 실패해결방법-1
+SQL> conn system/1234
+SQL> grant unlimited tablespace to user01;--권한 부여
+--default tablespace인 'SYSTEM'영역을 무제한 사용
+--그러나 권한 부여하면 문제 발생할 수 있다.
+--('SYSTEM' 테이블스페이스의 중요한 데이터 보안 상)
+
+--'user01'의 default_tablespace 확인
+select username, default_tablespace
+from dba_userS
+where lower(username) IN ('user01');--default_tablespace : SYSTEM
+
+select username, tablespace_name, max_bytes
+from dba_ts_quotas--quota가 설정된 user만 표시
+where username in ('USER01');
+--결과가 없음:user01은 quota가 설정안됨
+--그래서 'default_tablespace를 test_data(또는 users)로 변경' 후 'quota를 설정'
+
+--2. ★★실패 해결방법-2 : SYSTEM 테이블스페이스의 중요한 데이터의 보안상 문제 발생할 수 있으므로 default_tablespace를 변경함
+alter user user01
+default tablespace users--users : 사용자 데이터가 들어갈 테이블스페이스
+quota 5M ON users;
+
+alter user user01
+default tablespace test_data--위에서 직접 만든 테이블스페이스
+quota 2M ON test_data; 
+
+select username, tablespace_name, max_bytes
+from dba_ts_quotaS--quota가 설정된 user만 표시
+where username IN ('USER01');
+
+alter user user01
+default tablespace users--users : 사용자 데이터가 들어갈 테이블스페이스
+quota unlimited ON users;--unlimited : 용량을 제한하지 않고 사용할 수 있다.(-1로 표시됨)
+
+alter user user01
+default tablespace test_data--위에서 직접 만든 테이블스페이스
+quota unlimited ON test_data;
+
+select username, tablespace_name, max_bytes
+from dba_ts_quotaS--quota가 설정된 user만 표시
+where username IN ('USER01'); 
+
+
+
 ----------------------------------------------------------------------------------------
 
 --<안전한 user 생성 방법>
+--보통 user를 생성하고
+--grant connect, resource to 사용자명;
+--를 습관적으로 권한을 주는데
+--resource 롤을 주면 'unlimited tablespace'까지 주기에
+--'SYSTEM' 테이블스페이스를 무제한으로 사용가능하게 되어
+--'보안' 혹은 관리상에 문제가 될 소지를 가지고 있다.
+
+--[1] user 생성
+create user user02 identified by 1234;
+
+--[2] 권한 부여
+GRANT connect, resource to user02;
+
+--[3] 'unlimited tablespace' 권한회수 : 반드시 권한을 준 DBA가 권한 회수를 할 수 있다
+REVOKE unlimited tablespace from user02;
+
+--[4] user02의 default tablespace를 변경하고 quota절로 영역 할당해줌
+ALTER USER user02
+default tablespace users --users : 사용자 데이터가 들어갈 테이블스페이스
+quota 10M on users; --quota unlimited on users;
+
+--[with admin option]-----------------------------------
+/*
+ * [with admin option]
+ * 1. 권한을 받은자(=grantee)가 '시스템권한'을 '다른사용자'에게 부여 할 수 있도록 해준다.
+ * 2. with ADMIN option으로 주어진 권한은 계층적이지 않다.(평등하다.)
+ * 	  즉, b_user가 a_user의 권한을 revoke 할 수 있다.
+ * 3. revoke 시에는 with ADMIN option 옵션을 명시할 필요가 없다.
+ * 4. ** with ADMIN option으로 grant한 권한은 revoke 시 cascade 되지 않는다.
+ * 	  즉, 부여자의 권한이 회수될때 권한을 받은자의 권한이 같이 회수되지 않는다.
+ */
+
+SQL> conn system/1234
+SQL> create user a_user identified by 1234;
+SQL> grant create session to a_user with ADMIN option;
+
+--b_user 생성
+SQL> create user b_user identified by 1234;
+
+--a_user로 접속하여 b_user에게 DB접속 권한(with ADMIN option) 부여
+
+SQL> conn a_user/1234
+SQL> grant create session to b_user with admin option;
+
+--b_user로 접속하여 a_user의 DB접속 권한 회수
+SQL> conn b_user/1234
+SQL> revoke create session from a_user;
+
+--a_user로 wjqthrgkfuaus
+SQL> conn a_user/1234 --실패
+
+--<시스템 권한 회수>
+--revoke '' from 사용자|롤(role)|public(=모든사용자)
+
+-------------------------------------------------------------------
+--2.롤(role) 321p : 다양한 권한을 효과적으로 관리할 수 있도록 관련된 권한까지 묶어 놓은것
+--여러 사용자에게 보다 간편하게 권한을 부여할 수 있도록 함
+--grant connect, resource, dba to system;
+--*DBA 롤 : 시스템 자원을 무제한적으로 사용, 시스템 관리에 필요한 모든 권한
+--*connect 롤 : Oracle 9i까지 - 8가지 권한,
+--Oracle 10g 부터는 'create session'만 가지고 있다.
+--*resource 롤 : 객체(테이블, 뷰 등)를 생성할 수 있도록 하기 위해서 '시스템 권한'을 그룹화 시킨것
+
+---------------------------------------------------------------------
+
+--[객체 권한]
+--소유한 '객체'의 사용권한 관리를 위한 명령어 : DCL(grant,revoke)
+--1.1 객체 권한 부여(교재 312P 표 참조) : DB관리자나 객체소유자가 다른 사용자에게 권한을 부여할 수 있다.
+
+--grant to 'select|inser|update|delte.....on 객체' to 사용자|role|public [with grant option]
+--(ex) grant all on 객체 to 사용자;
+
+--1. select on 테이블명
+SQL> conn system/1234
+SQL> create user user01 identified by 1234;
+SQL> grant create session to user01;
+
+SQL> conn user01/1234 --접속 성공
+SQL> select * from employees; --실패 : user01은 employees 테이블이 없어서 오류
+SQL> select * from hr.employees;--실패 : user01은 hr이 소유한 employees 테이블에 대한 조회 권한이 없어서
+
+SQL> conn hr/1234; --접속해보니 lock되어 있으면
+
+SQL> conn system/1234;
+SQL> alter user hr account unlock; --잠김 해제
+SQL> alter user hr identified by 1234; --비밀번호도 다시 1234로 변경
+
+SQL> conn hr/1234;
+--user01에게 employees 테이블 조회 권한 부여
+SQL> grant select on employees to user01;
+
+SQL> conn user01/1234
+SQL> select * from hr.employees; --조회 성공
+
+--2. insert on 테이블명
+SQL> conn hr/1234;
+--user01 에게 'employees 테이블 삽입 권한' 부여
+SQL> grant insert on employees to user01;
+
+SQL> conn user01/1234;
+SQL> desc hr.employees;
+SQL> insert into hr.employees(EMPLOYEE_ID, FIRST_NAME, LAST_NAME, EMAIL, HIRE_DATE, JOB_ID)
+				values(8010,'길동','혼','a@naver.com','2022-09-22','AC_ACCOUNT');
+				
+--3. update(특정컬럼) on 테이블명
+SQL> conn hr/1234; --접속
+--uesr01에게 'employee 테이블의 특정 컬럼 수정 권한' 부여
+SQL> grant update(salary) on employees to user01;
+
+SQL> coon user01/1234
+SQL> update hr.employees set salary = 1000 where EMPLOYEE_ID = 8010; --성공
+SQL> update hr.employees set commission_pct = 500 where  where EMPLOYEE_ID = 8010; --실패, 컬럼 수정 권한이 없음
+
+--1.2 객체 권한 회수 = 제거 : DB 관리자나 권한을 부여한 사용자가 다른 사용자에게 부여한 객체 권한을 박탈
+--revoke 객체 권한 from 사용자
+--* to public으로 권한을 부여하면 회수할 떄도 from public으로 해야 한다.
+
+--1.revoke select on 객체
+SQL> conn hr/1234; --권한을 부여한 사용자로 접속
+SQL> revoke select on employees from user01;
+
+SQL> conn user01/1234;
+SQL> select * from hr.employees;
+SQL> update hr.employees set salary = 2000 where employee_ID = 8010;
+
+--2. revoke ALL on 객체 : 객체에 대한 모든 권한 회수
+SQL> conn hr/1234; --권한을 부여한 사용자로 접속
+SQL> revoke ALL on employees from user01;
+SQL> revoke ALL on employees from public --모든 사용자의 employees 대한 모든 권한 회수
+
+SQL> conn user01/1234
+SQL> update hr.employees set salary = 3000 where employee_id = 8010;
+--실패 메세지 : 내부적으로 select 먼저 실행되고 그 다음 update가 실행됨
+--select 권한이 없으므로 절차적으로 실행이 불가능함
+
+
+--[with admin option]-----------------------------------
+/*
+ * [with admin option]
+ * 1. 권한을 받은자(=grantee)가 '객체권한'을 '다른 사용자'에게 부여 할 수 있도록 해준다.
+ * 2. with ADMIN option으로 주어진 권한은 계층적이다(=평등하지 않다)
+ * 	  즉, b_user가 a_user의 권한을 revoke 할 수 있다.
+ * 3. revoke 시에는 with ADMIN option 옵션을 명시할 필요가 없다.
+ * 4. ** with ADMIN option으로 grant한 권한은 revoke 시 cascade 된다.
+ * 	  즉, 부여자의 권한이 회수될때 권한을 받은자의 권한이 같이 회수된다.
+ * 
+ * * with grant option 옵션은 role에 권한을 부여할 때는 사용할 수 없다.
+ */
+
+SQL> conn system/1234;
+SQL> create user usertest01 identified by 1234;
+SQL> create user usertest02 identified by 1234;
+
+--위에서 생성한 사용자들에게 DB접속권한, 테이블생성권한, 뷰생성권한 부여
+SQL> grant create session, create table, create view to usertest01;
+SQL> grant create session, create table, create view to usertest02;
+
+SQL> conn hr/1234 --hr(객체 소유자)접속, conn system/1234 (DB관리자)
+--usertest01에게 employees 테이블 조회권한 부여 + with GRANT option 옵션
+--usertest01은 소유자 hr로부터 다른 사용자에게 해당 권한(=employees 테이블 조회권한)을 부여할 수 있는 권한 부여받음
+SQL> grant select on employees to usertest01 with grant option;
+
+SQL> conn usertest01/1234
+SQL> grant select on hr.employees to usertest02;
+
+SQL> conn usertest02/1234
+SQL> select * from hr.employees;
+
+--권한 회수 : 객체의 소유자 계정
+SQL> conn hr/1234
+SQL> revoke select on employees from usertest01; --권한회수하면 cascade로 권환 회수됨
+
+SQL> conn usertest02/1234
+SQL> select * from hr.employees;--실패
+----------------------------------------------------------------------------
+----1.4 public : 모든 사용자에게 해당 권한 부여
+--권한 부여 : 객체의 소유자 계정
+SQL> conn hr/1234
+SQL> grant select on employees to public;
+
+SQL> conn usertest02/1234
+SQL> select * from hr.employees;
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
